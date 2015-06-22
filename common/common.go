@@ -42,7 +42,10 @@ func ReadMsg(conn net.Conn) (string, error) {
 	// Make a buffer to hold length of data
 	lenBuf := make([]byte, 4)
 	_, err := conn.Read(lenBuf)
+	// Receiving EOF means that the connection has been closed
 	if err == io.EOF {
+		// Close conn and exit
+		conn.Close()
 		fmt.Println("Connection Closed. Bye bye.")
 		os.Exit(0)
 	}
