@@ -50,18 +50,5 @@ func printOutput(conn *net.TCPConn) {
 			log.Fatal(err)
 		}
 		fmt.Println(msg)
-
-		// buf := make([]byte, 1024)
-		// // Read the incoming connection into the buffer.
-		// reqLen, err := conn.Read(buf)
-		// if err != nil {
-		// 	if err == io.EOF {
-		// 		conn.Close()
-		// 		fmt.Println("Connection was closed. Bye bye.")
-		// 		os.Exit(0)
-		// 	}
-		// 	fmt.Println("Error reading:", err.Error())
-		// }
-		// fmt.Printf("%s\n", string(buf[:reqLen+1]))
 	}
 }
