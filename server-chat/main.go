@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/jonfk/golang-chat/common"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -12,6 +13,10 @@ const (
 	CONN_HOST = "0.0.0.0"
 	CONN_PORT = "3333"
 	CONN_TYPE = "tcp"
+)
+
+var (
+	connections []net.Conn
 )
 
 func main() {
@@ -31,6 +36,8 @@ func main() {
 			fmt.Println("Error accepting: ", err.Error())
 			os.Exit(1)
 		}
+		// Save connection
+		connections = append(connections, conn)
 		// Handle connections in a new goroutine.
 		go handleRequest(conn)
 	}
@@ -38,14 +45,40 @@ func main() {
 
 // Handles incoming requests.
 func handleRequest(conn net.Conn) {
-	// Close the connection when you're done with it.
-	defer conn.Close()
-
-	msg, err := common.ReadMsg(conn)
-	if err != nil {
-		log.Fatal(err)
+	for {
+		msg, err := common.ReadMsg(conn)
+		if err != nil {
+			if err == io.EOF {
+				// Close the connection when you're done with it.
+				removeConn(conn)
+				conn.Close()
+				return
+			}
+			log.Println(err)
+			return
+		}
+		fmt.Printf("Message Received: %s\n", msg)
+		broadcast(conn, msg)
 	}
-	fmt.Printf("Message Received: %s\n", msg)
-	// Send a response back to person contacting us.
-	common.WriteMsg(conn, "Message Received.")
+}
+
+func removeConn(conn net.Conn) {
+	var i int
+	for i = range connections {
+		if connections[i] == conn {
+			break
+		}
+	}
+	connections = append(connections[:i], connections[i+1:]...)
+}
+
+func broadcast(conn net.Conn, msg string) {
+	for i := range connections {
+		if connections[i] != conn {
+			err := common.WriteMsg(connections[i], msg)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	}
 }

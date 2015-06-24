@@ -5,54 +5,53 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"log"
 	"net"
-	"os"
 )
 
 // To convert Big Endian binary format of a 4 byte integer to int32
-func FromBytes(b []byte) int32 {
+func FromBytes(b []byte) (int32, error) {
 	buf := bytes.NewReader(b)
 	var result int32
 	err := binary.Read(buf, binary.BigEndian, &result)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return result
+	return result, err
 }
 
 // To convert an int32 to a 4 byte Big Endian binary format
-func ToBytes(i int32) []byte {
+func ToBytes(i int32) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	err := binary.Write(buf, binary.BigEndian, i)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return buf.Bytes()
+	return buf.Bytes(), err
 }
 
-func WriteMsg(conn net.Conn, msg string) {
+func WriteMsg(conn net.Conn, msg string) error {
 	// Send the size of the message to be sent
-	conn.Write([]byte(ToBytes(int32(len([]byte(msg))))))
+	bytes, err := ToBytes(int32(len([]byte(msg))))
+	if err != nil {
+		return err
+	}
+	_, err = conn.Write(bytes)
+	if err != nil {
+		return err
+	}
 	// Send the message
-	conn.Write([]byte(msg))
+	_, err = conn.Write([]byte(msg))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func ReadMsg(conn net.Conn) (string, error) {
 	// Make a buffer to hold length of data
 	lenBuf := make([]byte, 4)
 	_, err := conn.Read(lenBuf)
-	// Receiving EOF means that the connection has been closed
-	if err == io.EOF {
-		// Close conn and exit
-		conn.Close()
-		fmt.Println("Connection Closed. Bye bye.")
-		os.Exit(0)
-	}
 	if err != nil {
 		return "", err
 	}
-	lenData := FromBytes(lenBuf)
+	lenData, err := FromBytes(lenBuf)
+	if err != nil {
+		return "", err
+	}
 
 	// Make a buffer to hold incoming data.
 	buf := make([]byte, lenData)
