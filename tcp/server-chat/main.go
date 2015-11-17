@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/jonfk/golang-chat/common"
+	"github.com/jonfk/golang-chat/tcp/common"
 	"io"
 	"log"
 	"net"
